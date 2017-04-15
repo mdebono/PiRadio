@@ -9,7 +9,8 @@ channels = [
     'http://jamfm.hoerradar.de/jamfm-mp3-128',
     'http://s1.voscast.com:8132/',
     'http://173.192.137.34:8044',
-    'http://188.94.97.91:80/radio21.mp3'
+    'http://188.94.97.91:80/radio21.mp3',
+	'http://shoutcast.pondi.hr:8000/listen.pls'
 ]
 
 channelNames = [
@@ -17,7 +18,8 @@ channelNames = [
     'JAM FM',
     '89.7 Bay',
     'Antena Zagreb',
-    'Radio 21 Hanover'
+    'Radio 21 Hanover',
+	'Radio Dalmacija'
 ]
 
 channel = 0
