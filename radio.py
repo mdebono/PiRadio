@@ -14,7 +14,7 @@ channels = [
 channelNames = [
     'Antenne 1',
     'JAM FM',
-    '89.7 bay',
+    '89.7 Bay',
     'Antena Zagreb'
 ]
 
@@ -42,26 +42,29 @@ lcd = Adafruit_CharLCD()
 default_lcd_text = None
 is_default_lcd_text = False
 
-def message(m):
+def message(m, is_permanent=True, visible_time=0):
+    global default_lcd_text
     global is_default_lcd_text
     print(m)
     lcd.clear()
     lcd.message(m)
-    is_default_lcd_text = False
+    if is_permanent:
+        default_lcd_text = m
+        is_default_lcd_text = True
+    else:
+        is_default_lcd_text = False
+        time.sleep(visible_time)
 
 def play(ch):
-    global default_lcd_text
-    global is_default_lcd_text
-    default_lcd_text = 'Playing\n' + channelNames[ch]
-    is_default_lcd_text = False
+    message('Playing\n' + channelNames[ch])
     mlplayer.play_item_at_index(ch)
 
 def volume_change(delta):
     volume = player.audio_get_volume()
     volume = volume + delta
     player.audio_set_volume(volume)
-    message('Volume: {0}'.format(volume))
-    time.sleep(0.2)
+    message('Volume: {0}'.format(volume), False, 0.2)
+
 
 play(channel)
 
@@ -84,7 +87,6 @@ while True:
 
     if not is_default_lcd_text:
         message(default_lcd_text)
-        is_default_lcd_text = True
         
     time.sleep(0.1)
 
