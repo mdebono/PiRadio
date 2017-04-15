@@ -2,20 +2,22 @@ import glob, random, sys, vlc
 from Adafruit_CharLCD import *
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
-import time
+import time, subprocess
 
 channels = [
     'http://stream.antenne1.de/stream1/livestream.mp3',
     'http://jamfm.hoerradar.de/jamfm-mp3-128',
     'http://s1.voscast.com:8132/',
-    'http://173.192.137.34:8044'
+    'http://173.192.137.34:8044',
+    'http://188.94.97.91:80/radio21.mp3'
 ]
 
 channelNames = [
     'Antenne 1',
     'JAM FM',
     '89.7 Bay',
-    'Antena Zagreb'
+    'Antena Zagreb',
+    'Radio 21 Hanover'
 ]
 
 channel = 0
@@ -65,11 +67,14 @@ def volume_change(delta):
     player.audio_set_volume(volume)
     message('Volume: {0}'.format(volume), False, 0.2)
 
-
 play(channel)
 
 while True:
-    if GPIO.input(BUTTON_PLAY):
+    if GPIO.input(VOLUME_UP) and GPIO.input(VOLUME_DOWN):
+        #TEST: subprocess.call(['shutdown', '-k', 'now', 'Radio initiated shutdown!'])
+        message('Shutting down...')
+        subprocess.call(['shutdown', '-h', 'now', 'Radio initiated shutdown!'])
+    elif GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
             message('Stopped :(')
