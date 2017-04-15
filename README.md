@@ -2,15 +2,25 @@
 This is a Python script for a Raspberry Pi internet radio.
 
 # Installation
+1. Clone the repository into `~/Documents/Radio`
+2. Edit your `rc.local` file:
+  `nano /etc/rc.local`
 
-Edit your `rc.local` file:
+  Add the following:
 
-`nano /etc/rc.local`
+  `sudo python3 /home/pi/Documents/Radio/radio.py &`
 
-Add the following:
+  before
 
-`sudo python3 /home/pi/Documents/Radio/radio.py &`
+  `exit 0`
 
-before
+3. Restart Raspberry Pi
 
-`exit 0`
+# Stopping the radio
+1. Show the radio processes
+
+  `ps -ef | grep "radio"`
+2. Look for `python3 /home/pi/Documents/Radio/radio.py`
+3. Kill the process
+
+  `sudo kill -9 <PID>`
