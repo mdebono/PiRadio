@@ -1,5 +1,6 @@
 import glob, random, sys, vlc, os, csv
 from Adafruit_CharLCD import *
+from datetime import datetime
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 import time, subprocess
@@ -19,6 +20,7 @@ GPIO.setup(VOLUME_UP, GPIO.IN)
 GPIO.setup(VOLUME_DOWN, GPIO.IN)
 
 lcd = Adafruit_CharLCD()
+MAX_LCD_LINE_CHARS = 16
 
 default_lcd_text = None
 is_default_lcd_text = False
@@ -51,18 +53,25 @@ mlplayer.set_media_list(medialist)
 def message(m, is_permanent=True, visible_time=0):
     global default_lcd_text
     global is_default_lcd_text
-    print(m)
-    lcd.clear()
-    lcd.message(m)
+    global now
+    now = get_time()
     if is_permanent:
+        align = MAX_LCD_LINE_CHARS - m.find('\n')
+        output = m.replace('\n', '{:>{}}\n'.format(now, align))
+        print(output)
+        lcd.clear()
+        lcd.message(output)
         default_lcd_text = m
         is_default_lcd_text = True
     else:
+        print(m)
+        lcd.clear()
+        lcd.message(m)
         is_default_lcd_text = False
         time.sleep(visible_time)
 
 def play(ch):
-    message('Playing\n' + channelNames[ch])
+    message('\n{}'.format(channelNames[ch]))
     mlplayer.play_item_at_index(ch)
 
 def volume_change(delta):
@@ -71,6 +80,19 @@ def volume_change(delta):
     player.audio_set_volume(volume)
     message('Volume: {}'.format(volume), False, 0.2)
 
+def get_time():
+    return datetime.now().strftime('%H:%M')
+
+def check_update_time():
+    global default_lcd_text
+    global now
+    new_time = get_time()
+    # only send update if time is different
+    if new_time != now:
+        now = new_time
+        message(default_lcd_text)
+
+now = get_time()
 channel = 0
 play(channel)
 
@@ -83,12 +105,13 @@ while True:
     if GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
-            message('Stopped :(')
+            message('\n')
         else:
             play(channel)
+
     elif GPIO.input(BUTTON_NEXT):
         channel += 1
-        if (channel >= len(channels)):
+        if (channel >= len(urls)):
             channel = 0
         play(channel)
     elif GPIO.input(VOLUME_UP):
@@ -98,6 +121,8 @@ while True:
 
     if not is_default_lcd_text:
         message(default_lcd_text)
-        
+
+    check_update_time()
+
     time.sleep(0.1)
 
