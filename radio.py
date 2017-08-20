@@ -81,7 +81,7 @@ def volume_change(delta):
     message('Volume: {}'.format(volume), False, 0.2)
 
 def get_time():
-    return datetime.now().strftime('%H:%M')
+    return datetime.now().strftime('%d.%m.%Y %H:%M')
 
 def check_update_time():
     global default_lcd_text
