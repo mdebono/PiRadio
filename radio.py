@@ -12,7 +12,7 @@ except ImportError as err:
 if GPIO:
     GPIO.setmode(GPIO.BCM)
     
-import time, subprocess, sched, threading
+import time, subprocess, sched, threading, queue
 
 channelsFilename = 'channels.csv'
 
@@ -35,6 +35,7 @@ MAX_LCD_LINE_CHARS = 16
 default_lcd_text = None
 is_default_lcd_text = False
 weather = 'gg'
+q = queue.Queue(1)
 
 path = os.path.abspath(os.path.dirname(sys.argv[0]))
 channelsFilepath = '{}/{}'.format(path, channelsFilename)
@@ -104,14 +105,16 @@ def check_update_time():
     # only send update if time is different
     if new_time != now:
         now = new_time
-        if default_lcd_text == '' or default_lcd_text == None:
-            message('\n'+weather)
-        else:
-            message(default_lcd_text)
+        message(default_lcd_text)
 
-def update_weather(w):
+def check_update_weather():
     global weather
-    weather = w
+    global q
+    if not q.empty():
+        new_weather = q.get_nowait()
+        if new_weather != weather:
+            weather = new_weather
+            message('\n{}'.format(weather))
     
 class Weather(threading.Thread):
     scheduler = sched.scheduler()
@@ -126,12 +129,11 @@ class Weather(threading.Thread):
         self.scheduler.enter(0, 1, self.get_weather)
         self.scheduler.run()
     def get_weather(self):
-        global weather
+        global q
         self.temp += 1
-        update_weather('{}°C Sunny'.format(self.temp))
-        #message('\n'+weather)
-        #print('fired, weather ={}\n'.format(weather)
-        self.scheduler.enter(2, 1, self.get_weather)
+        # put the weather, wait until a free slot is available
+        q.put('{}°C Sunny'.format(self.temp))
+        self.scheduler.enter(10, 1, self.get_weather)
     
 now = get_time()
 channel = 0
@@ -149,7 +151,8 @@ while True:
     if GPIO and GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
-            message('\n'+weather)
+            message('\n')
+            # TODO: trigger weather to download
         else:
             play(channel)
 
@@ -167,6 +170,8 @@ while True:
         message(default_lcd_text)
 
     check_update_time()
+    if not mlplayer.is_playing():
+        check_update_weather()
 
     time.sleep(0.1)
 
