@@ -13,8 +13,11 @@ if GPIO:
     GPIO.setmode(GPIO.BCM)
     
 import time, subprocess, sched, threading, queue
+import urllib.request, json
 
-channelsFilename = 'channels.csv'
+CHANNELS_FILENAME = 'channels.csv'
+WEATHER_API_KEY_FILENAME = 'WEATHERAPIKEY'
+WEATHER_API_URL = 'http://api.openweathermap.org/data/2.5/weather?id=2918632&appid=WEATHERAPIKEY&units=metric'
 
 BUTTON_PLAY = 14
 BUTTON_NEXT = 15
@@ -34,11 +37,15 @@ MAX_LCD_LINE_CHARS = 16
 
 default_lcd_text = None
 is_default_lcd_text = False
-weather = 'gg'
+weather = ''
+weather_api_key = ''
+weather_url = ''
 q = queue.Queue(1)
 
 path = os.path.abspath(os.path.dirname(sys.argv[0]))
-channelsFilepath = '{}/{}'.format(path, channelsFilename)
+
+# read channels
+channelsFilepath = '{}/{}'.format(path, CHANNELS_FILENAME)
 print('Reading channels from {}...'.format(channelsFilepath))
 urls = []
 channelNames = []
@@ -54,6 +61,14 @@ with open(channelsFilepath) as f:
             print('  {}'.format(channelName))
             channelNames.append(channelName)
             urls.append(url)
+
+# read WEATHER API KEY
+weatherApiKeyFilepath = '{}/{}'.format(path, WEATHER_API_KEY_FILENAME)
+print('\nReading Weather API KEY from {}...'.format(weatherApiKeyFilepath))
+with open(weatherApiKeyFilepath) as f:
+    weather_api_key = f.readline()
+    print('Weather API Key: {}\n'.format(weather_api_key))
+    weather_url = WEATHER_API_URL.replace('WEATHERAPIKEY', weather_api_key)
 
 player = vlc.MediaPlayer()
 medialist = vlc.MediaList(urls)
@@ -118,8 +133,6 @@ def check_update_weather():
     
 class Weather(threading.Thread):
     scheduler = sched.scheduler()
-    temp = 0
-    sWeather = None
     def __init__(self, threadID, name, counter):
         threading.Thread.__init__(self)
         self.threadID = threadID
@@ -130,10 +143,13 @@ class Weather(threading.Thread):
         self.scheduler.run()
     def get_weather(self):
         global q
-        self.temp += 1
+        js = json.loads(urllib.request.urlopen(weather_url).read())
+        print(js)
+        temp = js['main']['temp']
+        condition = js['weather'][0]['main']
         # put the weather, wait until a free slot is available
-        q.put('{}°C Sunny'.format(self.temp))
-        self.scheduler.enter(10, 1, self.get_weather)
+        q.put('{}C {}'.format(temp, condition))
+        self.scheduler.enter(60*10, 1, self.get_weather)
     
 now = get_time()
 channel = 0
