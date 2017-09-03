@@ -151,7 +151,7 @@ while True:
     if GPIO and GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
-            message('\n')
+            message('\n{}'.format(weather))
             # TODO: trigger weather to download
         else:
             play(channel)
