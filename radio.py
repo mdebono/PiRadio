@@ -12,7 +12,7 @@ except ImportError as err:
 if GPIO:
     GPIO.setmode(GPIO.BCM)
     
-import time, subprocess
+import time, subprocess, sched, threading
 
 channelsFilename = 'channels.csv'
 
@@ -34,6 +34,7 @@ MAX_LCD_LINE_CHARS = 16
 
 default_lcd_text = None
 is_default_lcd_text = False
+weather = 'gg'
 
 path = os.path.abspath(os.path.dirname(sys.argv[0]))
 channelsFilepath = '{}/{}'.format(path, channelsFilename)
@@ -93,20 +94,46 @@ def volume_change(delta):
     message('Volume: {}'.format(volume), False, 0.2)
 
 def get_time():
-    return datetime.now().strftime('%d.%m.%Y %H:%M')
+    return datetime.now().strftime('%d.%m.%Y %H:%M:%S')
 
 def check_update_time():
     global default_lcd_text
     global now
+    global weather
     new_time = get_time()
     # only send update if time is different
     if new_time != now:
         now = new_time
-        message(default_lcd_text)
+        if default_lcd_text == '' or default_lcd_text == None:
+            message('\n'+weather)
+        else:
+            message(default_lcd_text)
 
+class Weather(threading.Thread):
+    scheduler = sched.scheduler()
+    temp = 0
+    sWeather = None
+    def __init__(self, threadID, name, counter):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.counter = counter
+    def run(self):
+        self.scheduler.enter(0, 1, self.get_weather)
+        self.scheduler.run()
+    def get_weather(self):
+        global weather
+        self.temp += 1
+        weather = '{}°C Sunny'.format(self.temp)
+        #message('\n'+weather)
+        self.scheduler.enter(2, 1, self.get_weather)
+    
 now = get_time()
 channel = 0
 play(channel)
+
+thread = Weather(1, "Weather Thread", 1)
+thread.start()
 
 while True:
     # TODO: Shutdown doesn't work anymore on Raspian Jessie, probably needs sudo
@@ -114,12 +141,12 @@ while True:
     #    message('Shutting down...')
     #    subprocess.call(['shutdown', '-h', 'now', 'Radio initiated shutdown!'])
     #elif GPIO.input(BUTTON_PLAY):
-    if GPIO and GPIO.input(BUTTON_PLAY):
+    if GPIO and GPIO.input(BUTTON_PLAY) or True:
         if mlplayer.is_playing():
             mlplayer.stop()
-            message('\n')
+            message('\n'+weather)
         else:
-            play(channel)
+            pass#play(channel)
 
     elif GPIO and GPIO.input(BUTTON_NEXT):
         channel += 1
