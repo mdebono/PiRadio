@@ -94,7 +94,7 @@ def volume_change(delta):
     message('Volume: {}'.format(volume), False, 0.2)
 
 def get_time():
-    return datetime.now().strftime('%d.%m.%Y %H:%M:%S')
+    return datetime.now().strftime('%d.%m.%Y %H:%M')
 
 def check_update_time():
     global default_lcd_text
@@ -109,6 +109,10 @@ def check_update_time():
         else:
             message(default_lcd_text)
 
+def update_weather(w):
+    global weather
+    weather = w
+    
 class Weather(threading.Thread):
     scheduler = sched.scheduler()
     temp = 0
@@ -124,8 +128,9 @@ class Weather(threading.Thread):
     def get_weather(self):
         global weather
         self.temp += 1
-        weather = '{}°C Sunny'.format(self.temp)
+        update_weather('{}°C Sunny'.format(self.temp))
         #message('\n'+weather)
+        #print('fired, weather ={}\n'.format(weather)
         self.scheduler.enter(2, 1, self.get_weather)
     
 now = get_time()
@@ -141,12 +146,12 @@ while True:
     #    message('Shutting down...')
     #    subprocess.call(['shutdown', '-h', 'now', 'Radio initiated shutdown!'])
     #elif GPIO.input(BUTTON_PLAY):
-    if GPIO and GPIO.input(BUTTON_PLAY) or True:
+    if GPIO and GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
             message('\n'+weather)
         else:
-            pass#play(channel)
+            play(channel)
 
     elif GPIO and GPIO.input(BUTTON_NEXT):
         channel += 1
