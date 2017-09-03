@@ -143,7 +143,7 @@ class Weather(threading.Thread):
         self.scheduler.run()
     def get_weather(self):
         global q
-        js = json.loads(urllib.request.urlopen(weather_url).read())
+        js = json.loads(urllib.request.urlopen(weather_url).read().decode("utf-8"))
         print(js)
         temp = js['main']['temp']
         condition = js['weather'][0]['main']
