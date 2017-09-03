@@ -1,8 +1,17 @@
 import glob, random, sys, vlc, os, csv
-from Adafruit_CharLCD import *
 from datetime import datetime
-import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BCM)
+
+GPIO = None
+try:
+    import RPi.GPIO as GPIO
+    from Adafruit_CharLCD import *
+except ImportError as err:
+    print(err)
+    print('WARNING: Not running in Raspberry Pi mode!')
+
+if GPIO:
+    GPIO.setmode(GPIO.BCM)
+    
 import time, subprocess
 
 channelsFilename = 'channels.csv'
@@ -14,12 +23,13 @@ VOLUME_DOWN = 10
 
 print('Starting PiRadio...')
 
-GPIO.setup(BUTTON_PLAY, GPIO.IN)
-GPIO.setup(BUTTON_NEXT, GPIO.IN)
-GPIO.setup(VOLUME_UP, GPIO.IN)
-GPIO.setup(VOLUME_DOWN, GPIO.IN)
-
-lcd = Adafruit_CharLCD()
+if GPIO:
+    GPIO.setup(BUTTON_PLAY, GPIO.IN)
+    GPIO.setup(BUTTON_NEXT, GPIO.IN)
+    GPIO.setup(VOLUME_UP, GPIO.IN)
+    GPIO.setup(VOLUME_DOWN, GPIO.IN)
+    lcd = Adafruit_CharLCD()
+    
 MAX_LCD_LINE_CHARS = 16
 
 default_lcd_text = None
@@ -59,14 +69,16 @@ def message(m, is_permanent=True, visible_time=0):
         align = MAX_LCD_LINE_CHARS - m.find('\n')
         output = m.replace('\n', '{:>{}}\n'.format(now, align))
         print(output)
-        lcd.clear()
-        lcd.message(output)
+        if GPIO:
+            lcd.clear()
+            lcd.message(output)
         default_lcd_text = m
         is_default_lcd_text = True
     else:
         print(m)
-        lcd.clear()
-        lcd.message(m)
+        if GPIO:
+            lcd.clear()
+            lcd.message(m)
         is_default_lcd_text = False
         time.sleep(visible_time)
 
@@ -102,21 +114,21 @@ while True:
     #    message('Shutting down...')
     #    subprocess.call(['shutdown', '-h', 'now', 'Radio initiated shutdown!'])
     #elif GPIO.input(BUTTON_PLAY):
-    if GPIO.input(BUTTON_PLAY):
+    if GPIO and GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
             message('\n')
         else:
             play(channel)
 
-    elif GPIO.input(BUTTON_NEXT):
+    elif GPIO and GPIO.input(BUTTON_NEXT):
         channel += 1
         if (channel >= len(urls)):
             channel = 0
         play(channel)
-    elif GPIO.input(VOLUME_UP):
+    elif GPIO and GPIO.input(VOLUME_UP):
         volume_change(10)
-    elif GPIO.input(VOLUME_DOWN):
+    elif GPIO and GPIO.input(VOLUME_DOWN):
         volume_change(-10)
 
     if not is_default_lcd_text:
