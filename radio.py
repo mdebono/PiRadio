@@ -120,7 +120,9 @@ def check_update_time():
     # only send update if time is different
     if new_time != now:
         now = new_time
-        message(default_lcd_text)
+        return True
+    else:
+        return False
 
 def check_update_weather():
     global weather
@@ -129,7 +131,11 @@ def check_update_weather():
         new_weather = q.get_nowait()
         if new_weather != weather:
             weather = new_weather
-            message('\n{}'.format(weather))
+            return True
+        else:
+            return False
+    else:
+        return False
     
 class Weather(threading.Thread):
     scheduler = sched.scheduler()
@@ -145,7 +151,7 @@ class Weather(threading.Thread):
         global q
         js = json.loads(urllib.request.urlopen(weather_url).read().decode("utf-8"))
         print(js)
-        temp = js['main']['temp']
+        temp = int(round(float(js['main']['temp'])))
         condition = js['weather'][0]['main']
         # put the weather, wait until a free slot is available
         q.put('{}C {}'.format(temp, condition))
@@ -167,6 +173,7 @@ while True:
     if GPIO and GPIO.input(BUTTON_PLAY):
         if mlplayer.is_playing():
             mlplayer.stop()
+            check_update_weather()
             message('\n{}'.format(weather))
             # TODO: trigger weather to download
         else:
@@ -185,9 +192,11 @@ while True:
     if not is_default_lcd_text:
         message(default_lcd_text)
 
-    check_update_time()
+    if check_update_time():
+        message(default_lcd_text)
     if not mlplayer.is_playing():
-        check_update_weather()
+        if check_update_weather():
+            message('\n{}'.format(weather))
 
     time.sleep(0.1)
 
