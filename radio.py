@@ -18,6 +18,7 @@ import urllib.request, json
 CHANNELS_FILENAME = 'channels.csv'
 WEATHER_API_KEY_FILENAME = 'WEATHERAPIKEY'
 WEATHER_API_URL = 'http://api.openweathermap.org/data/2.5/weather?id=2918632&appid=WEATHERAPIKEY&units=metric'
+DEBUG = False
 
 BUTTON_PLAY = 14
 BUTTON_NEXT = 15
@@ -38,9 +39,9 @@ MAX_LCD_LINE_CHARS = 16
 default_lcd_text = None
 is_default_lcd_text = False
 weather = ''
+weather_new = ''
 weather_api_key = ''
 weather_url = ''
-q = queue.Queue(1)
 
 path = os.path.abspath(os.path.dirname(sys.argv[0]))
 
@@ -126,19 +127,21 @@ def check_update_time():
 
 def check_update_weather():
     global weather
-    global q
-    if not q.empty():
-        new_weather = q.get_nowait()
-        if new_weather != weather:
-            weather = new_weather
-            return True
-        else:
-            return False
+    global new_weather
+    if new_weather != weather:
+        weather = new_weather
+        return True
     else:
         return False
     
 class Weather(threading.Thread):
     scheduler = sched.scheduler()
+    global DEBUG
+    if DEBUG:
+        debug = 0
+        T = 10
+    else:
+        T = 60*10
     def __init__(self, threadID, name, counter):
         threading.Thread.__init__(self)
         self.threadID = threadID
@@ -148,14 +151,21 @@ class Weather(threading.Thread):
         self.scheduler.enter(0, 1, self.get_weather)
         self.scheduler.run()
     def get_weather(self):
-        global q
+        global new_weather
         js = json.loads(urllib.request.urlopen(weather_url).read().decode("utf-8"))
-        print(js)
         temp = round(float(js['main']['temp']), 1)
         condition = js['weather'][0]['main']
-        # put the weather, wait until a free slot is available
-        q.put('{}C {}'.format(temp, condition))
-        self.scheduler.enter(60*10, 1, self.get_weather)
+        # save weather
+        if DEBUG:
+            if self.debug == 1000:
+                self.debug = 0
+            new_weather = '{}C [{}]'.format(temp, self.debug)
+            print(js)
+            self.debug += 1
+        else:
+            new_weather = '{}C {}'.format(temp, condition)
+        print('Weather: {}'.format(new_weather))
+        self.scheduler.enter(self.T, 1, self.get_weather)
     
 now = get_time()
 channel = 0
