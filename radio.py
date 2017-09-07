@@ -151,7 +151,7 @@ class Weather(threading.Thread):
         global q
         js = json.loads(urllib.request.urlopen(weather_url).read().decode("utf-8"))
         print(js)
-        temp = int(round(float(js['main']['temp'])))
+        temp = round(float(js['main']['temp']), 1)
         condition = js['weather'][0]['main']
         # put the weather, wait until a free slot is available
         q.put('{}C {}'.format(temp, condition))
