@@ -135,36 +135,43 @@ def check_update_weather():
         return False
     
 class Weather(threading.Thread):
-    scheduler = sched.scheduler()
     global DEBUG
-    if DEBUG:
-        debug = 0
-        T = 10
-    else:
-        T = 60*10
     def __init__(self, threadID, name, counter):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.counter = counter
+        self.scheduler = sched.scheduler()
+        global path
+        self.output = open(path+'/weather.out', 'w')
+        if DEBUG:
+            self.debug = 0
+            self.T = 10
+        else:
+            self.T = 60*10
     def run(self):
         self.scheduler.enter(0, 1, self.get_weather)
         self.scheduler.run()
     def get_weather(self):
         global new_weather
-        js = json.loads(urllib.request.urlopen(weather_url).read().decode("utf-8"))
-        temp = round(float(js['main']['temp']), 1)
-        condition = js['weather'][0]['main']
-        # save weather
-        if DEBUG:
-            if self.debug == 1000:
-                self.debug = 0
-            new_weather = '{}C [{}]'.format(temp, self.debug)
-            print(js)
-            self.debug += 1
-        else:
-            new_weather = '{}C {}'.format(temp, condition)
-        print('Weather: {}'.format(new_weather))
+        global now
+        try:
+            js = json.loads(urllib.request.urlopen(weather_url).read().decode("utf-8"))
+            temp = round(float(js['main']['temp']), 1)
+            condition = js['weather'][0]['main']
+            # save weather
+            if DEBUG:
+                if self.debug == 1000:
+                    self.debug = 0
+                new_weather = '{}C [{}]'.format(temp, self.debug)
+                print('[{}]\n{}'.format(now, js), file=self.output, flush=True)
+                self.debug += 1
+            else:
+                new_weather = '{}C {}'.format(temp, condition)
+            print('[{}] {}'.format(now, new_weather), file=self.output, flush=True)
+            print('Weather: {}'.format(new_weather))
+        except Exception as err:
+            print('[{}] Error: {}'.format(now, err), file=self.output, flush=True)
         self.scheduler.enter(self.T, 1, self.get_weather)
     
 now = get_time()
