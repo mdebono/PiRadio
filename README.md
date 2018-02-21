@@ -12,9 +12,9 @@ This is a Python script for a Raspberry Pi internet radio.
 5. Test the radio from its directory  
    `sudo python3 radio.py`
 6. Edit your `rc.local` file:  
-   `nano /etc/rc.local`  
+   `sudo nano /etc/rc.local`  
    Add the following:  
-   `sudo python3 /home/pi/Documents/PiRadio/radio.py &`  
+   `sudo python3 /home/pi/Documents/PiRadio/radio.py > /home/pi/Documents/PiRadio/radio.out 2>&1 &`  
    before  
    `exit 0`
 7. Restart Raspberry Pi

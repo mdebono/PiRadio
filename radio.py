@@ -143,7 +143,7 @@ class Weather(threading.Thread):
         self.counter = counter
         self.scheduler = sched.scheduler()
         global path
-        self.output = open(path+'/weather.out', 'w')
+        self.output = open('{}/weather_{}.out'.format(path, datetime.now().strftime('%Y%m%d%H%M')), 'w')
         if DEBUG:
             self.debug = 0
             self.T = 10
@@ -178,7 +178,7 @@ now = get_time()
 channel = 0
 play(channel)
 
-thread = Weather(1, "Weather Thread", 1)
+thread = Weather(1, 'Weather Thread', 1)
 thread.start()
 
 while True:
